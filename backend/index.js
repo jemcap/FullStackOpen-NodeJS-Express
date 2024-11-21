@@ -32,6 +32,8 @@ let phonebook = [
 
 app.use(express.json());
 
+app.use(express.static("dist"));
+
 app.get("/api/persons", (req, res) => {
   res.json(phonebook);
 });
