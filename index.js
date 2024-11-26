@@ -1,41 +1,48 @@
 const express = require("express");
 const moment = require("moment");
 const morgan = require("morgan");
+const dotenv = require('dotenv')
+
+dotenv.config()
+
+const User = require('./models/phonebookUser')
 
 const cors = require("cors");
-
+// g5MPqQO5It8SZrRw
 const app = express();
 app.use(cors());
 
-let phonebook = [
-  {
-    id: "1",
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: "2",
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: "3",
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: "4",
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
+// let phonebook = [
+//   {
+//     id: "1",
+//     name: "Arto Hellas",
+//     number: "040-123456",
+//   },
+//   {
+//     id: "2",
+//     name: "Ada Lovelace",
+//     number: "39-44-5323523",
+//   },
+//   {
+//     id: "3",
+//     name: "Dan Abramov",
+//     number: "12-43-234345",
+//   },
+//   {
+//     id: "4",
+//     name: "Mary Poppendieck",
+//     number: "39-23-6423122",
+//   },
+// ];
 
 app.use(express.json());
 
 app.use(express.static("dist"));
 
 app.get("/api/persons", (req, res) => {
-  res.json(phonebook);
+  User.find({}).then(result => {
+    res.json(result)
+  })
 });
 // =============================================
 // Exercise 3.8*
@@ -59,20 +66,15 @@ app.get("/info", (req, res) => {
 });
 
 app.get("/api/persons/:id", (req, res) => {
-  const id = req.params.id;
-  console.log(id);
-  const isExisting = phonebook.find((user) => user.id === id);
-  if (isExisting) {
-    res.status(200).json(isExisting);
-  } else {
-    res.status(404).json({ message: "Cannot retrieve user" });
-  }
+  User.findById(req.params.id).then(result => {
+    res.json({ data: result})
+  })
 });
 
 app.delete("/api/persons/:id", (req, res) => {
-  const id = req.params.id;
-  phonebook = phonebook.filter((user) => user.id !== id);
-  res.status(200).json({ message: "Successfully deleted user." });
+  User.findByIdAndDelete(req.params.id).then(result => {
+    res.status(200).json({ message: "User deleted"})
+  })
 });
 
 const generateId = () => {
