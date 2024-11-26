@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const dotenv = require('dotenv')
 dotenv.config()
 
+
 mongoose.set("strictQuery", false)
 
 const uri = process.env.MONGODB_URI

@@ -1,11 +1,11 @@
 const express = require("express");
 const moment = require("moment");
 const morgan = require("morgan");
-const dotenv = require('dotenv')
+const dotenv = require("dotenv");
 
-dotenv.config()
+dotenv.config();
 
-const User = require('./models/phonebookUser')
+const User = require("./models/phonebookUser");
 
 const cors = require("cors");
 // g5MPqQO5It8SZrRw
@@ -40,9 +40,9 @@ app.use(express.json());
 app.use(express.static("dist"));
 
 app.get("/api/persons", (req, res) => {
-  User.find({}).then(result => {
-    res.json(result)
-  })
+  User.find({}).then((result) => {
+    res.json(result);
+  });
 });
 // =============================================
 // Exercise 3.8*
@@ -66,21 +66,21 @@ app.get("/info", (req, res) => {
 });
 
 app.get("/api/persons/:id", (req, res) => {
-  User.findById(req.params.id).then(result => {
-    res.json({ data: result})
-  })
+  User.findById(req.params.id).then((result) => {
+    res.json({ data: result });
+  });
 });
 
 app.delete("/api/persons/:id", (req, res) => {
-  User.findByIdAndDelete(req.params.id).then(result => {
-    res.status(200).json({ message: "User deleted"})
-  })
+  User.findByIdAndDelete(req.params.id).then((result) => {
+    res.status(200).json({ message: "User deleted" });
+  });
 });
 
 const generateId = () => {
-  const latestId = Math.max(...phonebook.map((p) => Number(p.id)));
-  const userId = Math.floor(Math.random() * 1000) + latestId + 1;
-  return String(userId);
+  // const latestId = Math.max(...phonebook.map((p) => Number(p.id)));
+  // const userId = Math.floor(Math.random() * 1000) + latestId + 1;
+  // return String(userId);
 };
 
 app.post("/api/persons", (req, res) => {
@@ -88,24 +88,25 @@ app.post("/api/persons", (req, res) => {
 
   console.log(user);
 
-  const isExistingEntry = phonebook.find((book) => book.name === user.name);
   if (!user.name || !user.number) {
     return res.status(400).json({
       error: "User missing.",
     });
-  } else if (isExistingEntry) {
-    return res.status(400).json({
-      error: "Name must be unique",
-    });
   }
 
-  const newUser = {
-    id: generateId(),
+  User.findOne({ name: user.name }).then((existingUser) => {
+    if (existingUser) {
+      return res.status(400).json({ error: "Entry must be unique" });
+    }
+  });
+
+  const newUser = new User({
     name: user.name,
     number: user.number,
-  };
-  phonebook = phonebook.concat(newUser);
-  res.status(200).json({ data: newUser, message: "User successfully created" });
+  });
+  newUser.save().then((savedUser) => {
+    res.json(savedUser);
+  });
 });
 
 const PORT = process.env.PORT || 3001;
