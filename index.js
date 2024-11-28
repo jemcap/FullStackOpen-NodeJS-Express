@@ -6,43 +6,24 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 const User = require("./models/phonebookUser");
+const errorHandler = require("./middleware/errorMiddleware");
 
 const cors = require("cors");
 // g5MPqQO5It8SZrRw
 const app = express();
 app.use(cors());
 
-// let phonebook = [
-//   {
-//     id: "1",
-//     name: "Arto Hellas",
-//     number: "040-123456",
-//   },
-//   {
-//     id: "2",
-//     name: "Ada Lovelace",
-//     number: "39-44-5323523",
-//   },
-//   {
-//     id: "3",
-//     name: "Dan Abramov",
-//     number: "12-43-234345",
-//   },
-//   {
-//     id: "4",
-//     name: "Mary Poppendieck",
-//     number: "39-23-6423122",
-//   },
-// ];
-
 app.use(express.json());
 
-app.use(express.static("dist"));
-
 app.get("/api/persons", (req, res) => {
-  User.find({}).then((result) => {
-    res.json(result);
-  });
+  User.find({})
+    .then((result) => {
+      res.json(result);
+    })
+    .catch((error) => {
+      console.log(error);
+      res.status(404).send({ error: "Cannoted retrieve users." });
+    });
 });
 // =============================================
 // Exercise 3.8*
@@ -65,10 +46,14 @@ app.get("/info", (req, res) => {
     );
 });
 
-app.get("/api/persons/:id", (req, res) => {
-  User.findById(req.params.id).then((result) => {
-    res.json({ data: result });
-  });
+app.get("/api/persons/:id", (req, res, next) => {
+  User.findById(req.params.id)
+    .then((result) => {
+      res.json({ data: result });
+    })
+    .catch((error) => {
+      next(error);
+    });
 });
 
 app.delete("/api/persons/:id", (req, res) => {
@@ -83,9 +68,8 @@ const generateId = () => {
   // return String(userId);
 };
 
-app.post("/api/persons", (req, res) => {
+app.post("/api/persons", async (req, res, next) => {
   const user = req.body;
-
   console.log(user);
 
   if (!user.name || !user.number) {
@@ -94,20 +78,47 @@ app.post("/api/persons", (req, res) => {
     });
   }
 
-  User.findOne({ name: user.name }).then((existingUser) => {
+  try {
+    const existingUser = await User.findOne({
+      name: user.name,
+      number: user.number,
+    });
     if (existingUser) {
       return res.status(400).json({ error: "Entry must be unique" });
     }
-  });
-
-  const newUser = new User({
-    name: user.name,
-    number: user.number,
-  });
-  newUser.save().then((savedUser) => {
-    res.json(savedUser);
-  });
+    const newUser = new User({
+      name: user.name,
+      number: user.number,
+    });
+    await newUser.save().then((savedUser) => {
+      res.json(savedUser);
+    });
+  } catch (error) {
+    next(error);
+  }
 });
+
+// Exercise 3.17*
+app.put("/api/persons/:id", (req, res, next) => {
+  const user = req.body;
+  const id = req.params.id;
+
+  if (!user.number || !user.name) {
+    return res.status(400).send({ error: "Number is missing" });
+  }
+
+  const updatedNumber = { number: user.number };
+
+  User.findByIdAndUpdate(id, updatedNumber, { new: true })
+    .then((updatedUser) => {
+      res.json(updatedUser);
+    })
+    .catch((error) => next(error));
+});
+
+app.use(express.static("dist"));
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 
